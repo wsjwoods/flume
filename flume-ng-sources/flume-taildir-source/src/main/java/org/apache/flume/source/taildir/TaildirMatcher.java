@@ -181,20 +181,35 @@ public class TaildirMatcher {
     long now = TimeUnit.SECONDS.toMillis(
         TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
     long currentParentDirMTime = parentDir.lastModified();
-    List<File> result;
 
     // calculate matched files if
     // - we don't want to use cache (recalculate every time) OR
     // - directory was clearly updated after the last check OR
     // - last mtime change wasn't already checked for sure
     //   (system clock hasn't passed that second yet)
+//    if (!cachePatternMatching ||
+//        lastSeenParentDirMTime < currentParentDirMTime ||
+//        !(currentParentDirMTime < lastCheckedTime)) {
+//      lastMatchedFiles = sortByLastModifiedTime(getMatchingFilesNoCache());
+//      lastSeenParentDirMTime = currentParentDirMTime;
+//      lastCheckedTime = now;
+//    }
+    // 在如下情况下重新计算匹配的文件
+    // - 配置不缓存文件
+    // - 在上次检查之后目录完全更新了
+    // - last mtime change wasn't already checked for sure
+    //   (system clock hasn't passed that second yet)
+    // hzy: 定制为定时更新-> 检查时间距离现在已经超过配置的值: cachePatternMatchingDuration
     if (!cachePatternMatching ||
-        lastSeenParentDirMTime < currentParentDirMTime ||
-        !(currentParentDirMTime < lastCheckedTime)) {
-      lastMatchedFiles = sortByLastModifiedTime(getMatchingFilesNoCache());
+            lastSeenParentDirMTime < currentParentDirMTime ||
+            !(currentParentDirMTime < lastCheckedTime)
+         //   ||(now - lastCheckedTime>cachePatternMatchingDuration)
+    ) {
+      lastMatchedFiles = sortByLastModifiedTime(getMatchingFilesNoCache2());
       lastSeenParentDirMTime = currentParentDirMTime;
       lastCheckedTime = now;
     }
+
 
     return lastMatchedFiles;
   }
