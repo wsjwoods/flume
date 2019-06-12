@@ -34,10 +34,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -230,6 +227,56 @@ public class TaildirMatcher {
     }
     return result;
   }
+  /**
+   * hzy
+   * 带递归
+   * @return
+   */
+  private List<File> getMatchingFilesNoCache2() {
+    List<File> result = Lists.newArrayList();
+
+    List<Path> paths = recurseFolder(parentDir);
+    for(Path path:paths){
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(path, fileFilter)) {
+        for (Path entry : stream) {
+          result.add(entry.toFile());
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+//    String matchedFileNames = result.stream().map(r-> r.getAbsolutePath()).collect(Collectors.joining("\n"));
+//    logger.debug("============================matched files=======================================");
+//    logger.debug(matchedFileNames);
+//    logger.debug("=============================matched files======================================");
+    return result;
+  }
+
+  /**
+   * hzy
+   * @param root
+   * @return
+   */
+  public List<Path> recurseFolder(File root) {
+    List<Path> allParentFolders = new ArrayList<>();
+    allParentFolders.add(root.toPath());
+
+    if (root.exists()) {
+      File[] files = root.listFiles();
+      if (null == files || files.length == 0) {
+        return allParentFolders;
+      } else {
+        for (File subFile : files) {
+          if (subFile.isDirectory()) {
+            allParentFolders.addAll(recurseFolder(subFile));
+          }
+        }
+      }
+    }
+    return allParentFolders;
+  }
+
 
   /**
    * Utility function to sort matched files based on last modification time.
